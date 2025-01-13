@@ -1,16 +1,26 @@
 import csv
 import math
 import sys
+import os
 
 # Helper functions
 def read_csv(file_path):
-    """Reads data from a CSV file and returns the headers and data."""
+    if not os.path.exists(file_path):
+        raise FileNotFoundError(f"File not found: '{file_path}'")
+    if not os.access(file_path, os.R_OK):
+        raise PermissionError(f"Cannot read file: '{file_path}'")
+
     data = []
-    with open(file_path, 'r') as file:
+    with open(file_path, 'r', encoding='utf-8') as file:
         reader = csv.reader(file)
-        headers = next(reader)
+        try:
+            headers = next(reader)
+        except StopIteration:
+            raise ValueError(f"The file '{file_path}' is empty or does not contain headers.")
         for row in reader:
             data.append(row)
+        if not data:
+            raise ValueError(f"The file '{file_path}' contains headers but no data rows.")
     return headers, data
 
 def is_numeric(value):
