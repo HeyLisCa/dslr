@@ -4,6 +4,13 @@ import sys
 import os
 import math
 
+colors = {
+    "Gryffindor": "#C72C48",  # Bright red
+    "Hufflepuff": "#F9E03C",  # Golden yellow
+    "Ravenclaw": "#1E3A5F",   # Navy blue
+    "Slytherin": "#4C9A2A"    # Grass green
+}
+
 def read_csv(file_path):
     """Reads data from a CSV file and returns it as a DataFrame."""
     if not os.path.exists(file_path):
@@ -24,8 +31,6 @@ def read_csv(file_path):
 def create_histogram(data, courses):
     """Creates a histogram of the given data."""
     num_courses = len(courses)
-    num_cols = 5  # Number of columns in the grid
-    num_rows = math.ceil(num_courses / num_cols)
 
     fig, axes = plt.subplots(3, 5, figsize=(18, 10))
     axes = axes.flatten()
@@ -33,7 +38,7 @@ def create_histogram(data, courses):
     for i, course in enumerate(courses):
         for house in ['Gryffindor', 'Hufflepuff', 'Ravenclaw', 'Slytherin']:
             house_scores = data[data['Hogwarts House'] == house][course]
-            axes[i].hist(house_scores.dropna(), bins=10, alpha=0.5, label=house)
+            axes[i].hist(house_scores.dropna(), bins=10, alpha=0.5, label=house, color=colors[house])
 
         axes[i].set_title(course)
         axes[i].set_xlabel('Scores')
@@ -50,7 +55,6 @@ def calculate_variance(data, courses):
     """Calculates the variance of the given data."""
     variances = {}
     for course in courses:
-        course_data = data[course].dropna()
         house_variances = {}
         
         for house in ['Gryffindor', 'Hufflepuff', 'Ravenclaw', 'Slytherin']:
