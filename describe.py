@@ -1,10 +1,11 @@
 import csv
 import math
-import sys
 import os
+import sys
 
 # Helper functions
 def read_csv(file_path):
+    """Reads a CSV file and returns its headers and data."""
     if not os.path.exists(file_path):
         raise FileNotFoundError(f"File not found: '{file_path}'")
     if not os.access(file_path, os.R_OK):
@@ -65,6 +66,7 @@ def main(file_path):
     
     columns_to_ignore = ['Index', 'Hogwarts House', 'First Name', 'Last Name', 'Birthday', 'Best Hand']
     
+    # Extract numeric data while ignoring non-relevant columns
     for i, col in enumerate(transposed_data):
         col_filtered = [float(val) for val in col if is_numeric(val)]
 
@@ -72,19 +74,18 @@ def main(file_path):
             numeric_data.append(col_filtered)
             numeric_headers.append(headers[i])
 
-    # Limit the length of feature names
-    max_feature_length = 15  # Maximum length for feature names
+    max_feature_length = 15
     truncated_headers = [header[:max_feature_length-3] + '...' if len(header) > max_feature_length else header for header in numeric_headers]
     
-    # Print the headers for the numerical features
+    # Print headers with appropriate formatting
     print(f"{'':<{max_feature_length}}", end=" ")
     for header in truncated_headers:
         print(f"{header:>20}", end=" ")
-    print()  # New line after headers
+    print()
 
-    # Print the statistics
     stats = ["Count", "Mean", "Std", "Min", "25%", "50%", "75%", "Max"]
 
+    # Print statistical values for each column
     for stat in stats:
         if stat == "Count":
             values = [calculate_count(col) for col in numeric_data]
@@ -96,19 +97,18 @@ def main(file_path):
             values = [calculate_min_max(col)[0] for col in numeric_data]
         elif stat == "Max":
             values = [calculate_min_max(col)[1] for col in numeric_data]
-        else:  # Percentiles
+        else:
             percentile_index = {"25%": 0.25, "50%": 0.50, "75%": 0.75}[stat]
             values = [calculate_percentiles(col, percentile_index) for col in numeric_data]
 
-        # Print the stat values
         print(f"{stat:<{max_feature_length}}", end=" ")
         for value in values:
             print(f"{value:>20.6f}", end=" ")
-        print()  # New line after each stat
+        print()
 
 if __name__ == "__main__":
     if len(sys.argv) != 2:
-        print("Usage: python describe.py dataset_train.csv")
+        print("Usage: python describe.py dataset.csv")
         sys.exit(1)
 
     main(sys.argv[1])
