@@ -33,43 +33,36 @@ def truncate_name(name, max_length=15):
 
 def create_pair_plot(data):
     """
-    Creates a pair plot of the numeric features of the given data,
-    grouped by Hogwarts House, and saves it to the 'Outputs' folder.
+    Creates a pair plot for numeric columns in the dataset, grouped by Hogwarts House.
+    Saves the plot as 'pair_plot.png' in the 'Outputs' folder.
     """
-    data = data.drop(columns=['Index'], errors='ignore')
-    numeric_data = data.select_dtypes(include=[float, int]).drop(columns=['Hogwarts House'], errors='ignore')
-
-    length = len(numeric_data.columns)
-    last_row = length * (length - 1)
+    data = data.drop(columns=["Index"], errors="ignore")
+    numeric_data = data.select_dtypes(include=[float, int])
+    if numeric_data.empty:
+        raise ValueError("No numeric columns found in the dataset.")
+    
     grouped = data.groupby("Hogwarts House")
+    length = len(numeric_data.columns)
 
-    fig, dim_axs = plt.subplots(nrows=length, ncols=length, figsize=(20, 16), gridspec_kw={"wspace": 0, "hspace": 0})
-    axs = dim_axs.flatten()
+    fig, axes = plt.subplots(length, length, figsize=(16, 9), gridspec_kw={"wspace": 0, "hspace": 0})
+    axes = axes.flatten()
 
-    i = 0
-    for feature in numeric_data.columns:
-        for against_feature in numeric_data.columns:
-            truncated_feature = truncate_name(feature)
-            truncated_against_feature = truncate_name(against_feature)
-            
-            if (i % length) == 0:
-                axs[i].set_ylabel(f"{truncated_feature}", fontsize=9)
-            if i >= last_row:
-                axs[i].set_xlabel(f"{truncated_against_feature}", fontsize=9)
-
-            axs[i].set_yticklabels([])
-            axs[i].set_yticks([])
-            axs[i].set_xticklabels([])
-            axs[i].set_xticks([])
-            axs[i].grid(False)
-
+    for i, feature in enumerate(numeric_data.columns):
+        for j, against_feature in enumerate(numeric_data.columns):
+            ax = axes[i * length + j]
             if feature == against_feature:
-                grouped[feature].hist(alpha=0.5, ax=axs[i], bins=10)
+                grouped[feature].hist(alpha=0.5, ax=ax, bins=10)
             else:
-                for house, y in grouped:
-                    axs[i].scatter(x=y[against_feature], y=y[feature], marker=".", c=colors[house], alpha=0.5, s=10)
-            i += 1
+                for house, group in grouped:
+                    ax.scatter(group[against_feature], group[feature], c=colors[house], alpha=0.5, s=10, marker=".")
+            if i == length - 1:
+                ax.set_xlabel(truncate_name(against_feature), fontsize=6)
+            if j == 0:
+                ax.set_ylabel(truncate_name(feature), fontsize=6)
+            ax.set_xticks([])
+            ax.set_yticks([])
 
+    plt.tight_layout()
     output_dir = "Outputs"
     os.makedirs(output_dir, exist_ok=True)
     output_path = os.path.join(output_dir, "pair_plot.png")
@@ -83,7 +76,7 @@ def main(file_path):
         create_pair_plot(data)
         print("pair_plot.png saved in the 'Outputs' folder.")
     except Exception as e:
-        print(f"An error occurred: {e}")
+        print(f"Error: {e}")
 
 if __name__ == "__main__":
     if len(sys.argv) != 2:

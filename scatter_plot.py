@@ -4,6 +4,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
 
+# Define house colors for plotting
 colors = {
     "Gryffindor": "#C72C48",  # Bright red
     "Hufflepuff": "#F9E03C",  # Golden yellow
@@ -28,41 +29,34 @@ def read_csv(file_path):
     except Exception as e:
         raise ValueError(f"An unexpected error occurred while reading the file: {e}")
 
-def create_scatter(data, class_column):
-    """Display scatter plots for numeric columns, grouped by class, and save as an image."""
-    if class_column not in data.columns:
-        raise ValueError(f"Column '{class_column}' not found in the dataset.")
-
+def create_scatter(data):
+    """
+    Creates scatter plots for numeric columns in the dataset, grouped by Hogwarts House.
+    Saves the plot as 'scatter_plot.png' in the 'Outputs' folder.
+    """
     numeric_data = [col for col in data.select_dtypes(include=["number"]).columns if col != "Index"]
     if not numeric_data:
         raise ValueError("No numeric columns found in the dataset.")
 
-    grouped = data.groupby(class_column)
-    ncols = min(len(numeric_data), 3)
+    grouped = data.groupby("Hogwarts House")
+    ncols = min(len(numeric_data), 5)
     nrows = (len(numeric_data) + ncols - 1) // ncols
 
-    fig, axes = plt.subplots(nrows=nrows, ncols=ncols, figsize=(10, 12)) 
-    axes = axes.flatten() if isinstance(axes, (list, np.ndarray)) else [axes]
+    fig, axes = plt.subplots(nrows=nrows, ncols=ncols, figsize=(16, 9))
+    axes = axes.flatten()
 
     for i, feature in enumerate(numeric_data):
-        ax = axes[i]
         for house, group in grouped:
-            ax.scatter(
-                x=group.index,
-                y=group[feature],
-                marker=".",
-                c=colors.get(house, "black"),
-                label=house,
-                alpha=0.7
-            )
-        ax.set_title(feature)
-        ax.legend()
+            axes[i].scatter(group.index, group[feature], c=colors[house], alpha=0.7, label=house, marker=".")
+        axes[i].set_title(feature, fontsize=10)
+        axes[i].set_xlabel("Index", fontsize=9)
+        axes[i].set_ylabel("Value", fontsize=9)
+        axes[i].legend(fontsize=8)
 
     for i in range(len(numeric_data), len(axes)):
         axes[i].axis("off")
 
     plt.tight_layout()
-
     output_dir = "Outputs"
     os.makedirs(output_dir, exist_ok=True)
     output_path = os.path.join(output_dir, "scatter_plot.png")
@@ -73,12 +67,7 @@ def main(file_path):
     """Main entry point of the program."""
     try:
         data = read_csv(file_path)
-
-        class_column = "Hogwarts House"
-        if class_column not in data.columns:
-            raise ValueError(f"'{class_column}' column is missing from the dataset.")
-
-        create_scatter(data, class_column)
+        create_scatter(data)
         print("scatter_plot.png saved in the 'Outputs' folder.")
     except Exception as e:
         print(f"Error: {e}")
