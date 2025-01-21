@@ -66,7 +66,6 @@ def main(file_path):
     
     columns_to_ignore = ['Index', 'Hogwarts House', 'First Name', 'Last Name', 'Birthday', 'Best Hand']
     
-    # Extract numeric data while ignoring non-relevant columns
     for i, col in enumerate(transposed_data):
         col_filtered = [float(val) for val in col if is_numeric(val)]
 
@@ -77,7 +76,6 @@ def main(file_path):
     max_feature_length = 15
     truncated_headers = [header[:max_feature_length-3] + '...' if len(header) > max_feature_length else header for header in numeric_headers]
     
-    # Print headers with appropriate formatting
     print(f"{'':<{max_feature_length}}", end=" ")
     for header in truncated_headers:
         print(f"{header:>20}", end=" ")
@@ -85,7 +83,6 @@ def main(file_path):
 
     stats = ["Count", "Mean", "Std", "Min", "25%", "50%", "75%", "Max"]
 
-    # Print statistical values for each column
     for stat in stats:
         if stat == "Count":
             values = [calculate_count(col) for col in numeric_data]
