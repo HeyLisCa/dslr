@@ -4,7 +4,6 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
 
-# Define house colors for plotting
 colors = {
     "Gryffindor": "#C72C48",  # Bright red
     "Hufflepuff": "#F9E03C",  # Golden yellow
@@ -57,7 +56,7 @@ def create_scatter(data):
         axes[i].axis("off")
 
     plt.tight_layout()
-    output_dir = "Outputs"
+    output_dir = "Outputs/images"
     os.makedirs(output_dir, exist_ok=True)
     output_path = os.path.join(output_dir, "scatter_plot.png")
     fig.savefig(output_path, dpi=300)

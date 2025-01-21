@@ -55,7 +55,7 @@ def create_histogram(data):
         axes[i].axis("off")
 
     plt.tight_layout()
-    output_dir = "Outputs"
+    output_dir = "Outputs/images"
     os.makedirs(output_dir, exist_ok=True)
     output_path = os.path.join(output_dir, "histogram.png")
     fig.savefig(output_path, dpi=300)
