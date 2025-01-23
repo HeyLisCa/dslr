@@ -1,8 +1,9 @@
 import pandas as pd
 from sklearn.metrics import accuracy_score
+import sys
+import os
 
 def main():
-    true_labels_file = "dataset_test.csv"
     predictions_file = "Outputs/prediction/houses.csv"
 
     true_labels_df = pd.read_csv(true_labels_file)
@@ -20,4 +21,18 @@ def main():
     print(f"Accuracy: {accuracy * 100:.2f}%")
 
 if __name__ == "__main__":
+    if len(sys.argv) != 2:
+        print("Usage: python compare_prediction.py dataset.csv")
+        sys.exit(1)
+    
+    test_dataset = sys.argv[1]
+    if not os.path.isfile(test_dataset):
+        print(f"Error: The dataset file '{test_dataset}' does not exist.")
+        sys.exit(1)
+
+    houses_file = "Outputs/prediction/houses.csv"
+    if not os.path.isfile(houses_file):
+        print(f"Error: The houses file '{houses_file}' does not exist.")
+        sys.exit(1)
+
     main()

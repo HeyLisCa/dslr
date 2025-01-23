@@ -62,10 +62,10 @@ def create_scatter(data):
     fig.savefig(output_path, dpi=300)
 
 # Main function
-def main(file_path):
+def main(dataset_file):
     """Main entry point of the program."""
     try:
-        data = read_csv(file_path)
+        data = read_csv(dataset_file)
         create_scatter(data)
         print("scatter_plot.png saved in the 'Outputs' folder.")
     except Exception as e:
@@ -76,4 +76,9 @@ if __name__ == "__main__":
         print("Usage: python scatter_plot.py dataset.csv")
         sys.exit(1)
 
-    main(sys.argv[1])
+    dataset_file = sys.argv[1]
+    if not os.path.isfile(dataset_file):
+        print(f"Error: The dataset file '{dataset_file}' does not exist.")
+        sys.exit(1)
+
+    main(dataset_file)

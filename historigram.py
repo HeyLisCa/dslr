@@ -79,9 +79,9 @@ def calculate_variance(data):
     print(f"The course with the most homogeneous score distribution is: {homogeneous_course}")
 
 # Main function
-def main(file_path):
+def main(dataset_file):
     try:
-        data = read_csv(file_path)
+        data = read_csv(dataset_file)
         calculate_variance(data)
         create_histogram(data)
         print("historigram.png saved in the 'Outputs' folder.")
@@ -93,4 +93,9 @@ if __name__ == "__main__":
         print("Usage: python histogram.py dataset.csv")
         sys.exit(1)
 
-    main(sys.argv[1])
+    dataset_file = sys.argv[1]
+    if not os.path.isfile(dataset_file):
+        print(f"Error: The dataset file '{dataset_file}' does not exist.")
+        sys.exit(1)
+
+    main(dataset_file)

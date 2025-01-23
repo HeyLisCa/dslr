@@ -79,4 +79,8 @@ if __name__ == "__main__":
         sys.exit(1)
     
     dataset_file = sys.argv[1]
+    if not os.path.isfile(dataset_file):
+        print(f"Error: The dataset file '{dataset_file}' does not exist.")
+        sys.exit(1)
+
     logreg_train(dataset_file)
