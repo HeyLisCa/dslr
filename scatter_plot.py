@@ -56,7 +56,7 @@ def create_scatter(data):
         axes[i].axis("off")
 
     plt.tight_layout()
-    output_dir = "Outputs/images"
+    output_dir = "Outputs/visualization"
     os.makedirs(output_dir, exist_ok=True)
     output_path = os.path.join(output_dir, "scatter_plot.png")
     fig.savefig(output_path, dpi=300)

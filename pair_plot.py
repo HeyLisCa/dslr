@@ -63,7 +63,7 @@ def create_pair_plot(data):
             ax.set_yticks([])
 
     plt.tight_layout()
-    output_dir = "Outputs/images"
+    output_dir = "Outputs/visualization"
     os.makedirs(output_dir, exist_ok=True)
     output_path = os.path.join(output_dir, "pair_plot.png")
     fig.savefig(output_path, dpi=300)
