@@ -40,7 +40,7 @@ def logreg_train(dataset_file):
     output_dir = "Outputs/training"
     os.makedirs(output_dir, exist_ok=True)
 
-    selected_features = ["Transfiguration", "History of Magic", "Charms", "Ancient Runes", "Defense Against the Dark Arts", "Herbology", "Potions", "Flying", "Astronomy"]
+    selected_features = ["Charms", "Ancient Runes", "Defense Against the Dark Arts", "Herbology", "Flying", "Astronomy"]
     
     data = data.dropna(subset=selected_features)
     X = np.array(data[selected_features], dtype=float)
@@ -75,7 +75,7 @@ def logreg_train(dataset_file):
 
 if __name__ == "__main__":
     if len(sys.argv) != 2:
-        print("Usage: python logreg_train.py dataset_train.csv")
+        print("Usage: python logreg_train.py dataset.csv")
         sys.exit(1)
     
     dataset_file = sys.argv[1]

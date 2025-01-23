@@ -12,8 +12,7 @@ def predict(X, weights):
 
 def logreg_predict(test_dataset, weights_file, stats_file):
     data = pd.read_csv(test_dataset)
-    
-    selected_features = ["Transfiguration", "History of Magic", "Charms", "Ancient Runes", "Defense Against the Dark Arts", "Herbology", "Potions", "Flying", "Astronomy"]
+    selected_features = ["Charms", "Ancient Runes", "Defense Against the Dark Arts", "Herbology", "Flying", "Astronomy"]
     
     missing_features = set(selected_features) - set(data.columns)
     if missing_features:
@@ -53,7 +52,7 @@ def logreg_predict(test_dataset, weights_file, stats_file):
 
 if __name__ == "__main__":
     if len(sys.argv) != 4:
-        print("Usage: python logreg_predict.py dataset_test.csv weights.csv stats.csv")
+        print("Usage: python logreg_predict.py dataset.csv weights.csv stats.csv")
         sys.exit(1)
     
     test_dataset = sys.argv[1]
