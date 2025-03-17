@@ -132,7 +132,6 @@ def most_homogeneous_course(data):
     return most_homogeneous_column
 
 
-
 if __name__ == "__main__":
     if len(sys.argv) != 2:
         print("Usage: python describe.py <dataset.csv>")
