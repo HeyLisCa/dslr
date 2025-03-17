@@ -2,7 +2,6 @@ import csv
 import os
 import sys
 import re
-import math
 
 
 class InvalidDatasetError(Exception):
@@ -77,7 +76,7 @@ def calc_std(data, columns):
     for i, column in enumerate(columns):
         mean = calc_mean(data, columns)[i]
         variance = sum((float(row[i]) - mean) ** 2 for row in data[1:] if row[i] != '') / calc_count(data, columns)[i]
-        std = math.sqrt(variance)
+        std = variance ** 0.5
         values.append(std)
     return values
 

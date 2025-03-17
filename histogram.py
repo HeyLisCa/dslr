@@ -3,7 +3,6 @@ import os
 import sys
 import re
 import matplotlib.pyplot as plt
-import numpy as np
 
 
 colors = {
@@ -113,11 +112,24 @@ def most_homogeneous_course(data):
     
     course_variances = {}
     for column in columns:
-        house_means = [np.mean(house_data[house][column]) for house in colors.keys() if house_data[house][column]]
+        house_means = []
+        for house in colors.keys():
+            if house_data[house][column]:
+                house_means.append(sum(house_data[house][column]) / len(house_data[house][column]))
+
         if len(house_means) == 4:
-            course_variances[column] = np.std(house_means)
+            mean = sum(house_means) / len(house_means)
+            variance = sum((x - mean) ** 2 for x in house_means) / len(house_means)
+            course_variances[column] = variance ** 0.5
     
-    return min(course_variances, key=course_variances.get)
+    most_homogeneous_column = None
+    smallest_variance = float('inf')
+    for column, variance in course_variances.items():
+        if variance < smallest_variance:
+            smallest_variance = variance
+            most_homogeneous_column = column
+    
+    return most_homogeneous_column
 
 
 
