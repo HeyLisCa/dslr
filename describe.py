@@ -169,8 +169,6 @@ def display_data(data):
         print(f"{col: <{col_width}}", end="")
     print()
 
-    rows = filtered_data[1:]
-
     for stat in stats:
         print(f"{stat: <10}", end="")
         match stat:
