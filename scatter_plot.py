@@ -1,5 +1,6 @@
 import csv, os, re, sys
 import matplotlib.pyplot as plt
+import numpy as np
 
 
 colors = {
@@ -144,16 +145,85 @@ def user_input_subject(valid_subjects):
     print("Available subjects:")
     for idx, subject in enumerate(valid_subjects, 1):
         print(f"{idx}. {subject}")
+    print(f"{len(valid_subjects) + 1}. Similar Features")
+    print(f"{len(valid_subjects) + 2}. Exit")
+
     
     while True:
         try:
-            choice = int(input(f"Choose a subject (1-{len(valid_subjects)}): "))
+            choice = int(input(f"Choose a subject (1-{len(valid_subjects) + 2}): "))
             if 1 <= choice <= len(valid_subjects):
                 return valid_subjects[choice - 1]
+            elif choice == len(valid_subjects) + 1:
+                return "Similar Features"
+            elif choice == len(valid_subjects) + 2:
+                return "Exit"
             else:
                 print("Invalid choice, please try again")
         except ValueError:
             print("Invalid input, please enter a number")
+
+
+def pearson_correlation(x, y):
+    n = len(x)
+    if n == 0:
+        return 0  
+
+    mean_x = sum(x) / n
+    mean_y = sum(y) / n
+
+    num = sum((x[i] - mean_x) * (y[i] - mean_y) for i in range(n))
+    denom_x = sum((x[i] - mean_x) ** 2 for i in range(n)) ** 0.5
+    denom_y = sum((y[i] - mean_y) ** 2 for i in range(n)) ** 0.5
+
+    if denom_x == 0 or denom_y == 0:
+        return 0  
+
+    return num / (denom_x * denom_y)
+
+
+def find_strongest_correlations(result):
+    correlation_scores = []
+
+    for subject1 in result:
+        for subject2 in result[subject1]:
+            correlations = result[subject1][subject2].values()
+            avg_correlation = sum(abs(corr) for corr in correlations) / len(correlations)
+            correlation_scores.append(((subject1, subject2), avg_correlation))
+
+    correlation_scores.sort(key=lambda x: x[1], reverse=True)
+
+    return correlation_scores[0]
+
+
+def check_similar_features(data):
+    column_data = extract_column_data(data)
+    columns = list(column_data.keys())
+    
+    house_data = extract_house_data(data, columns)
+    
+    result = {col_gen: {col: {house: [] for house in colors.keys()} for col in columns if col != col_gen} 
+              for col_gen in columns}
+    
+    for col_gen in columns:
+        for col in columns:
+            if col_gen == col:
+                continue
+
+            for house, house_values in house_data.items():
+                x_values = house_values[col_gen]
+                y_values = house_values[col]
+                
+                mask = [x is not None and y is not None for x, y in zip(x_values, y_values)]
+                x_values = [x for x, m in zip(x_values, mask) if m]
+                y_values = [y for y, m in zip(y_values, mask) if m]
+
+                correlation = pearson_correlation(x_values, y_values)
+                result[col_gen][col][house] = correlation
+
+    top_correlations = find_strongest_correlations(result)
+
+    print(f"The strongest correlation is between {top_correlations[0][0]} and {top_correlations[0][1]}")
 
 
 if __name__ == "__main__":
@@ -165,7 +235,12 @@ if __name__ == "__main__":
         valid_subjects = get_valid_subjects(data)
         if valid_subjects:
             subject = user_input_subject(valid_subjects)
-            display_scatter_plots(data, subject)
+            if subject == "Similar Features":
+                check_similar_features(data)
+            elif subject == "Exit":
+                print("Exiting program")
+            else:
+                display_scatter_plots(data, subject)
         else:
             print("No valid numeric subjects found in the dataset")
     else:
