@@ -1,7 +1,4 @@
-import csv
-import os
-import sys
-import re
+import sys, os, csv, re
 import matplotlib.pyplot as plt
 
 
@@ -64,6 +61,21 @@ def filter_columns(data):
     return columns
 
 
+def extract_column_data(data):
+    header = data[0]
+    numeric_columns = filter_columns(data)
+    col_indices = [i for i, col in enumerate(header) if col in numeric_columns]
+
+    column_data = {col: [] for col in numeric_columns}
+
+    for row in data[1:]:
+        for i, col in zip(col_indices, numeric_columns):
+            value = row[i]
+            column_data[col].append(float(value) if value != '' else None)
+
+    return column_data
+
+
 def extract_house_data(data, columns):
     header = data[0]
     col_indices = [i for i, col in enumerate(header) if col in columns]
@@ -79,57 +91,56 @@ def extract_house_data(data, columns):
     return house_data
 
 
-def display_histograms(data):
-    columns = filter_columns(data)
+
+def display_pair_plot(data):
+    column_data = extract_column_data(data)
+    columns = list(column_data.keys())
+
+    if len(columns) < 2:
+        print("Not enough numeric columns to create a pair plot")
+        return
+
     house_data = extract_house_data(data, columns)
-    n_cols = len(columns)
-    n_rows = (n_cols // 4) + (1 if n_cols % 4 else 0)
-    fig, axes = plt.subplots(n_rows, 4, figsize=(13, 11))
-    axes = axes.flatten()
+    n = len(columns)
+
+    fig, axes = plt.subplots(n, n, figsize=(13, 11))
     
-    for i, column in enumerate(columns):
-        for house, house_values in house_data.items():
-            values = house_values[column]
-            if values:
-                axes[i].hist(values, bins=20, color=colors.get(house, 'gray'), alpha=0.6, edgecolor='black', label=house)
-        
-        axes[i].set_xlabel("Notes")
-        axes[i].set_ylabel("Frequency")
-        axes[i].set_title(f"{column}")
-        axes[i].grid(True, linestyle='--', alpha=0.6)
-        axes[i].legend()
-    
-    for i in range(n_cols, len(axes)):
-        fig.delaxes(axes[i])
-    
+    for i, col_x in enumerate(columns):
+        for j, col_y in enumerate(columns):
+            ax = axes[i, j]
+
+            if i == j:
+                for house, house_values in house_data.items():
+                    values = house_values[col_x]
+                    if values:
+                        ax.hist(values, bins=15, color=colors.get(house, 'gray'), alpha=0.5, label=house, edgecolor='black')
+            else:
+                for house, house_values in house_data.items():
+                    x_values = house_values[col_x]
+                    y_values = house_values[col_y]
+
+                    mask = [x is not None and y is not None for x, y in zip(x_values, y_values)]
+                    x_values = [x for x, m in zip(x_values, mask) if m]
+                    y_values = [y for y, m in zip(y_values, mask) if m]
+
+                    if x_values and y_values:
+                        ax.scatter(x_values, y_values, alpha=0.5, s=3, label=house, color=colors.get(house, 'gray'))
+
+
+            ax.set_xticks([])
+            ax.set_yticks([])
+
+            if j == 0:
+                ax.set_ylabel(col_x[:16], fontsize=7)
+            if i == n - 1:
+                ax.set_xlabel(col_y[:16], fontsize=7)
+
+            ax.grid(True, linestyle="--", alpha=0.3)
+
     plt.tight_layout()
     plt.show()
 
 
-def most_homogeneous_course(data):
-    columns = filter_columns(data)
-    house_data = extract_house_data(data, columns)
-    
-    course_variances = {}
-    for column in columns:
-        house_means = []
-        for house in colors.keys():
-            if house_data[house][column]:
-                house_means.append(sum(house_data[house][column]) / len(house_data[house][column]))
-
-        if len(house_means) == 4:
-            mean = sum(house_means) / len(house_means)
-            variance = sum((x - mean) ** 2 for x in house_means) / len(house_means)
-            course_variances[column] = variance ** 0.5
-    
-    most_homogeneous_column = None
-    smallest_variance = float('inf')
-    for column, variance in course_variances.items():
-        if variance < smallest_variance:
-            smallest_variance = variance
-            most_homogeneous_column = column
-    
-    return most_homogeneous_column
 
 
 if __name__ == "__main__":
@@ -138,8 +149,6 @@ if __name__ == "__main__":
     else:
         data = read_csv(sys.argv[1])
         if data:
-            display_histograms(data)
-            result = most_homogeneous_course(data)
-            print(f"The most homogeneous course is: {result}")
+            display_pair_plot(data)
         else:
             print("No numeric columns found in the dataset")

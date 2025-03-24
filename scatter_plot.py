@@ -1,6 +1,5 @@
 import csv, os, re, sys
 import matplotlib.pyplot as plt
-import numpy as np
 
 
 colors = {
@@ -57,7 +56,7 @@ def filter_columns(data):
     for i, column in enumerate(header):
         if column.lower() in {"id", "index"}:
             continue
-        if all(number_regex.fullmatch(row[i]) or row[i] == '' for row in rows):
+        if all(number_regex.fullmatch(row[i]) or row[i] == '' for row in rows) and not all(row[i] == '' for row in rows):
             columns.append(column)
     return columns
 
