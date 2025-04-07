@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 
 
 colors = {
-    "Gryffindor": "#f32100",
+    "Gryffindor": "#ff0000",
     "Slytherin": "#15ac00",
     "Ravenclaw": "#003cdd",
     "Hufflepuff": "#e6ea01",
@@ -91,7 +91,7 @@ def display_histograms(data):
         for house, house_values in house_data.items():
             values = house_values[column]
             if values:
-                axes[i].hist(values, bins=20, color=colors.get(house, 'gray'), alpha=0.6, edgecolor='black', label=house)
+                axes[i].hist(values, bins=20, color=colors.get(house, 'gray'), alpha=0.4, edgecolor='black', label=house)
         
         axes[i].set_xlabel("Notes")
         axes[i].set_ylabel("Frequency")
