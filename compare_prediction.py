@@ -5,7 +5,7 @@ import os
 
 def main():
     predictions_file = "Outputs/prediction/houses.csv"
-
+    true_labels_file = sys.argv[1]
     true_labels_df = pd.read_csv(true_labels_file)
     predictions_df = pd.read_csv(predictions_file)
 
