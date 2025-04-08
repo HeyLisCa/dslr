@@ -1,116 +1,175 @@
 import csv
-import math
+import re
 import os
 import sys
 
-# Helper functions
+class InvalidDatasetError(Exception):
+    pass
+
 def read_csv(file_path):
-    """Reads a CSV file and returns its headers and data."""
-    if not os.path.exists(file_path):
-        raise FileNotFoundError(f"File not found: '{file_path}'")
-    if not os.access(file_path, os.R_OK):
-        raise PermissionError(f"Cannot read file: '{file_path}'")
-
-    data = []
-    with open(file_path, 'r', encoding='utf-8') as file:
-        reader = csv.reader(file)
-        try:
-            headers = next(reader)
-        except StopIteration:
-            raise ValueError(f"The file '{file_path}' is empty or does not contain headers.")
-        for row in reader:
-            data.append(row)
-        if not data:
-            raise ValueError(f"The file '{file_path}' contains headers but no data rows.")
-    return headers, data
-
-def is_numeric(value):
-    """Checks if the given value is numeric."""
     try:
-        float(value)
-        return True
-    except ValueError:
-        return False
+        if not os.path.isfile(file_path):
+            raise FileNotFoundError(f"Error: The file '{file_path}' was not found")
 
-def calculate_count(data):
-    """Returns the number of elements in the given data."""
-    return len(data)
+        with open(file_path, 'r', encoding='utf-8') as file:
+            reader = csv.reader(file, delimiter=',')
+            rows = [row for row in reader]
 
-def calculate_mean(data):
-    """Calculates the mean of the given data."""
-    return sum(data) / calculate_count(data)
+        if not rows:
+            raise InvalidDatasetError(f"Error: The file '{file_path}' is empty")
 
-def calculate_std(data, mean):
-    """Calculates the standard deviation of the given data."""
-    variance = sum((x - mean) ** 2 for x in data) / calculate_count(data)
-    return math.sqrt(variance)
+        header = rows[0]
+        if not header or all(cell.strip() == "" for cell in header):
+            raise InvalidDatasetError(f"Error: The file '{file_path}' has an invalid header")
 
-def calculate_min_max(data):
-    """Calculates the minimum and maximum values in the given data."""
-    return min(data), max(data)
+        column_count = len(header)
+        for i, row in enumerate(rows[1:], start=2):
+            if len(row) != column_count:
+                raise InvalidDatasetError(f"Error: Column mismatch at line {i}")
 
-def calculate_percentiles(data, percentile):
-    """Calculates a percentile of the given data."""
-    data_sorted = sorted(data)
-    index = int(percentile * len(data_sorted))
-    return data_sorted[index]
+        return rows
 
-# Main function
-def main(file_path):
-    """Main entry point of the program."""
-    headers, data = read_csv(file_path)
-    transposed_data = list(zip(*data))
-
-    numeric_data = []
-    numeric_headers = []
+    except (FileNotFoundError, InvalidDatasetError) as e:
+        print(e)
+    except Exception as e:
+        print(f"Error while loading the file '{file_path}': {e}")
     
-    columns_to_ignore = ['Index', 'Hogwarts House', 'First Name', 'Last Name', 'Birthday', 'Best Hand']
-    
-    for i, col in enumerate(transposed_data):
-        col_filtered = [float(val) for val in col if is_numeric(val)]
+    return []
 
-        if col_filtered and headers[i] not in columns_to_ignore:
-            numeric_data.append(col_filtered)
-            numeric_headers.append(headers[i])
+def filter_columns(data):
+    number_regex = re.compile(r"-?\d+(\.\d+)?([eE][-+]?\d+)?")
+    header = data[0]
+    rows = data[1:]
+    columns = []
 
-    max_feature_length = 15
-    truncated_headers = [header[:max_feature_length-3] + '...' if len(header) > max_feature_length else header for header in numeric_headers]
-    
-    print(f"{'':<{max_feature_length}}", end=" ")
+    for i, column in enumerate(header):
+        if column.lower() in {"id", "index"}:
+            continue
+        if all(number_regex.fullmatch(row[i]) or row[i] == '' for row in rows) and not all(row[i] == '' for row in rows):
+            columns.append(column)
+    return columns
+
+def calculate_count(data, columns):
+    counts = []
+    for i in range(len(columns)):
+        counts.append(sum(1 for row in data[1:] if row[i] != ''))
+    return counts
+
+
+def calculate_mean(data, columns):
+    means = []
+    for i, _ in enumerate(columns):
+        valid_values = [float(row[i]) for row in data[1:] if row[i] != '']
+        mean = sum(valid_values) / len(valid_values)
+        means.append(mean)
+    return means
+
+def calculate_std(data, columns, means):
+    stds = []
+    for i, mean in enumerate(means):
+        valid_values = [float(row[i]) for row in data[1:] if row[i] != '']
+        variance = sum((val - mean) ** 2 for val in valid_values) / len(valid_values)
+        stds.append(variance ** 0.5)
+    return stds
+
+def calculate_min(data, columns):
+    mins = []
+    for i, _ in enumerate(columns):
+        valid_values = [float(row[i]) for row in data[1:] if row[i] != '']
+        mins.append(valid_values[0] if valid_values else None)
+        for val in valid_values[1:]:
+            if val < mins[-1]:
+                mins[-1] = val
+    return mins
+
+def calculate_max(data, columns):
+    maxs = []
+    for i, _ in enumerate(columns):
+        valid_values = [float(row[i]) for row in data[1:] if row[i] != '']
+        maxs.append(valid_values[0] if valid_values else None)
+        for val in valid_values[1:]:
+            if val > maxs[-1]:
+                maxs[-1] = val
+    return maxs
+
+def calculate_percentile(values, percentile):
+    index = (percentile / 100) * (len(values) - 1)
+    lower = int(index)
+    upper = min(lower + 1, len(values) - 1)
+    weight = index - lower
+    return values[lower] + weight * (values[upper] - values[lower])
+
+def calculate_percent(data, columns, stat):
+    results = []
+    for i, _ in enumerate(columns):
+        values = sorted(float(row[i]) for row in data[1:] if row[i] != '')
+        if not values:
+            results.append(None)
+            continue
+        if stat == '25%':
+            results.append(calculate_percentile(values, 25))
+        elif stat == '50%':
+            results.append(calculate_percentile(values, 50))
+        elif stat == '75%':
+            results.append(calculate_percentile(values, 75))
+    return results
+
+def display_calc(values, columns):
+    max_feature_length = 20
+    for i, value in enumerate(values):
+        formatted_value = f"{value:.6f}" if value is not None else "NaN"
+        print(f"{formatted_value:>{max_feature_length}}", end=" ")
+    print()
+
+def display_data(data):
+    columns = filter_columns(data)
+    stats = ["Count", "Mean", "Std", "Min", "25%", "50%", "75%", "Max"]
+    header = data[0]
+    col_indices = [header.index(col) for col in columns]
+    filtered_data = [[row[i] for i in col_indices] for row in data]
+
+    truncated_headers = [col[:15] + '...' if len(col) > 15 else col for col in columns]
+
+    print(f"{'':<15}", end=" ")
     for header in truncated_headers:
         print(f"{header:>20}", end=" ")
     print()
 
-    stats = ["Count", "Mean", "Std", "Min", "25%", "50%", "75%", "Max"]
+    count = calculate_count(filtered_data, columns)
+    mean = calculate_mean(filtered_data, columns)
+    std = calculate_std(filtered_data, columns, mean)
+    min = calculate_min(filtered_data, columns)
+    max = calculate_max(filtered_data, columns)
 
     for stat in stats:
-        if stat == "Count":
-            values = [calculate_count(col) for col in numeric_data]
-        elif stat == "Mean":
-            values = [calculate_mean(col) for col in numeric_data]
-        elif stat == "Std":
-            values = [calculate_std(col, calculate_mean(col)) for col in numeric_data]
-        elif stat == "Min":
-            values = [calculate_min_max(col)[0] for col in numeric_data]
-        elif stat == "Max":
-            values = [calculate_min_max(col)[1] for col in numeric_data]
-        else:
-            percentile_index = {"25%": 0.25, "50%": 0.50, "75%": 0.75}[stat]
-            values = [calculate_percentiles(col, percentile_index) for col in numeric_data]
+        print(f"{stat:<15}", end=" ")
+        match stat:
+            case "Count":
+                values = count
+            case "Mean":
+                values = mean
+            case "Std":
+                values = std
+            case "Min":
+                values = min
+            case "Max":
+                values = max
+            case _:
+                values = calculate_percent(filtered_data, columns, stat)
+        display_calc(values, columns)
 
-        print(f"{stat:<{max_feature_length}}", end=" ")
-        for value in values:
-            print(f"{value:>20.6f}", end=" ")
-        print()
+def main(data):
+    columns = filter_columns(data)
+    if not columns:
+        print("No numeric columns found in the dataset.")
+        return
+    display_data(data)
 
 if __name__ == "__main__":
     if len(sys.argv) != 2:
-        print("Usage: python describe.py dataset.csv")
+        print("Usage: python describe.py <dataset.csv>")
         sys.exit(1)
 
-    dataset_file = sys.argv[1]
-    if not os.path.isfile(dataset_file):
-        print(f"Error: The dataset file '{dataset_file}' does not exist.")
-        sys.exit(1)
-
-    main(dataset_file)
+    data = read_csv(sys.argv[1])
+    if data:
+        main(data)
