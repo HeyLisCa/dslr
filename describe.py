@@ -1,12 +1,29 @@
 import csv
-import re
 import os
+import re
 import sys
 
+
 class InvalidDatasetError(Exception):
+    """Custom exception raised for invalid datasets."""
     pass
 
+
 def read_csv(file_path):
+    """
+    Reads a CSV file and returns its rows as a list.
+
+    Args:
+        file_path (str): Path to the CSV file.
+
+    Returns:
+        list: A list of rows (each row is a list of strings) from the CSV file.
+        If the file is invalid or empty, returns an empty list.
+    
+    Raises:
+        FileNotFoundError: If the file cannot be found.
+        InvalidDatasetError: If the file is empty or has an invalid header or column mismatch.
+    """
     try:
         if not os.path.isfile(file_path):
             raise FileNotFoundError(f"Error: The file '{file_path}' was not found")
@@ -33,10 +50,20 @@ def read_csv(file_path):
         print(e)
     except Exception as e:
         print(f"Error while loading the file '{file_path}': {e}")
-    
+
     return []
 
+
 def filter_columns(data):
+    """
+    Filters columns that are numeric and not 'id' or 'index'.
+
+    Args:
+        data (list): A list of rows from the CSV file, where each row is a list of strings.
+
+    Returns:
+        list: A list of column names that are numeric and not 'id' or 'index'.
+    """
     number_regex = re.compile(r"-?\d+(\.\d+)?([eE][-+]?\d+)?")
     header = data[0]
     rows = data[1:]
@@ -49,7 +76,18 @@ def filter_columns(data):
             columns.append(column)
     return columns
 
+
 def calculate_count(data, columns):
+    """
+    Calculates the count of non-empty entries for each column.
+
+    Args:
+        data (list): A list of rows from the CSV file.
+        columns (list): A list of column names to calculate the count for.
+
+    Returns:
+        list: A list of counts of non-empty entries for each column.
+    """
     counts = []
     for i in range(len(columns)):
         counts.append(sum(1 for row in data[1:] if row[i] != ''))
@@ -57,6 +95,16 @@ def calculate_count(data, columns):
 
 
 def calculate_mean(data, columns):
+    """
+    Calculates the mean for each numeric column.
+
+    Args:
+        data (list): A list of rows from the CSV file.
+        columns (list): A list of numeric column names.
+
+    Returns:
+        list: A list of means for each numeric column.
+    """
     means = []
     for i, _ in enumerate(columns):
         valid_values = [float(row[i]) for row in data[1:] if row[i] != '']
@@ -64,7 +112,19 @@ def calculate_mean(data, columns):
         means.append(mean)
     return means
 
+
 def calculate_std(data, columns, means):
+    """
+    Calculates the standard deviation for each numeric column.
+
+    Args:
+        data (list): A list of rows from the CSV file.
+        columns (list): A list of numeric column names.
+        means (list): A list of mean values for the corresponding columns.
+
+    Returns:
+        list: A list of standard deviations for each numeric column.
+    """
     stds = []
     for i, mean in enumerate(means):
         valid_values = [float(row[i]) for row in data[1:] if row[i] != '']
@@ -72,7 +132,18 @@ def calculate_std(data, columns, means):
         stds.append(variance ** 0.5)
     return stds
 
+
 def calculate_min(data, columns):
+    """
+    Calculates the minimum value for each numeric column.
+
+    Args:
+        data (list): A list of rows from the CSV file.
+        columns (list): A list of numeric column names.
+
+    Returns:
+        list: A list of minimum values for each numeric column.
+    """
     mins = []
     for i, _ in enumerate(columns):
         valid_values = [float(row[i]) for row in data[1:] if row[i] != '']
@@ -82,7 +153,18 @@ def calculate_min(data, columns):
                 mins[-1] = val
     return mins
 
+
 def calculate_max(data, columns):
+    """
+    Calculates the maximum value for each numeric column.
+
+    Args:
+        data (list): A list of rows from the CSV file.
+        columns (list): A list of numeric column names.
+
+    Returns:
+        list: A list of maximum values for each numeric column.
+    """
     maxs = []
     for i, _ in enumerate(columns):
         valid_values = [float(row[i]) for row in data[1:] if row[i] != '']
@@ -92,14 +174,37 @@ def calculate_max(data, columns):
                 maxs[-1] = val
     return maxs
 
+
 def calculate_percentile(values, percentile):
+    """
+    Calculates a specific percentile from a list of values.
+
+    Args:
+        values (list): A list of numeric values.
+        percentile (float): The desired percentile (between 0 and 100).
+
+    Returns:
+        float: The calculated percentile value.
+    """
     index = (percentile / 100) * (len(values) - 1)
     lower = int(index)
     upper = min(lower + 1, len(values) - 1)
     weight = index - lower
     return values[lower] + weight * (values[upper] - values[lower])
 
+
 def calculate_percent(data, columns, stat):
+    """
+    Calculates the 25th, 50th, or 75th percentile for each numeric column.
+
+    Args:
+        data (list): A list of rows from the CSV file.
+        columns (list): A list of numeric column names.
+        stat (str): The desired percentile ('25%', '50%', or '75%').
+
+    Returns:
+        list: A list of calculated percentile values for each numeric column.
+    """
     results = []
     for i, _ in enumerate(columns):
         values = sorted(float(row[i]) for row in data[1:] if row[i] != '')
@@ -114,14 +219,29 @@ def calculate_percent(data, columns, stat):
             results.append(calculate_percentile(values, 75))
     return results
 
+
 def display_calc(values, columns):
+    """
+    Displays calculated statistics for the columns.
+
+    Args:
+        values (list): A list of calculated statistical values to display.
+        columns (list): A list of column names to associate with the statistics.
+    """
     max_feature_length = 20
     for i, value in enumerate(values):
         formatted_value = f"{value:.6f}" if value is not None else "NaN"
         print(f"{formatted_value:>{max_feature_length}}", end=" ")
     print()
 
+
 def display_data(data):
+    """
+    Displays the calculated statistics for the dataset.
+
+    Args:
+        data (list): A list of rows from the CSV file.
+    """
     columns = filter_columns(data)
     stats = ["Count", "Mean", "Std", "Min", "25%", "50%", "75%", "Max"]
     header = data[0]
@@ -158,18 +278,20 @@ def display_data(data):
                 values = calculate_percent(filtered_data, columns, stat)
         display_calc(values, columns)
 
-def main(data):
-    columns = filter_columns(data)
-    if not columns:
-        print("No numeric columns found in the dataset.")
-        return
-    display_data(data)
 
 if __name__ == "__main__":
     if len(sys.argv) != 2:
         print("Usage: python describe.py <dataset.csv>")
         sys.exit(1)
 
-    data = read_csv(sys.argv[1])
+    file_path = sys.argv[1]
+    data = read_csv(file_path)
+
     if data:
-        main(data)
+        columns = filter_columns(data)
+        if not columns:
+            print("No numeric columns found in the dataset.")
+        else:
+            display_data(data)
+    else:
+        print(f"Failed to read data from {file_path}")
