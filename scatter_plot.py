@@ -4,11 +4,12 @@ import re
 import sys
 import matplotlib.pyplot as plt
 
-colors = {
-    "Gryffindor": "#f32100",
-    "Slytherin": "#15ac00",
-    "Ravenclaw": "#003cdd",
-    "Hufflepuff": "#e6ea01",
+
+COLORS = {
+    "Gryffindor": "#f32100",   # red
+    "Slytherin": "#15ac00",    # green
+    "Ravenclaw": "#003cdd",    # blue
+    "Hufflepuff": "#e6ea01",   # yellow
 }
 
 
@@ -19,52 +20,47 @@ class InvalidDatasetError(Exception):
 
 def read_csv(file_path):
     """
-    Reads a CSV file, validates its structure, and returns its content.
+    Read and validate a CSV file.
 
     Args:
         file_path (str): The path to the CSV file to read.
 
     Returns:
-        list: A list of rows read from the CSV file, or an empty list if there is an error.
+        list: A list of rows read from the CSV file, or an empty list if an error occurs.
     """
     try:
         if not os.path.isfile(file_path):
-            raise FileNotFoundError(f"Error: The file '{file_path}' was not found")
+            raise FileNotFoundError(f"Error: The file '{file_path}' was not found.")
 
         with open(file_path, 'r', encoding='utf-8') as file:
             reader = csv.reader(file, delimiter=',')
             rows = [row for row in reader]
 
         if not rows:
-            raise InvalidDatasetError(f"Error: The file '{file_path}' is empty")
+            raise InvalidDatasetError(f"Error: The file '{file_path}' is empty.")
 
         header = rows[0]
         if not header or all(cell.strip() == "" for cell in header):
-            raise InvalidDatasetError(f"Error: The file '{file_path}' has an invalid header")
+            raise InvalidDatasetError(f"Error: The file '{file_path}' has an invalid header.")
 
         column_count = len(header)
         for i, row in enumerate(rows[1:], start=2):
             if len(row) != column_count:
-                raise InvalidDatasetError(f"Error: Column mismatch at line {i}")
+                raise InvalidDatasetError(f"Error: Column mismatch at line {i}.")
 
         return rows
 
-    except FileNotFoundError as e:
+    except (FileNotFoundError, InvalidDatasetError, Exception) as e:
         print(e)
-    except InvalidDatasetError as e:
-        print(e)
-    except Exception as e:
-        print(f"Error while loading the file '{file_path}': {e}")
-
-    return []
+        return []
 
 
 def filter_columns(data):
     """
-    Filters and identifies numeric columns from the data, ignoring ID/index columns.
+    Identify numeric columns in the dataset.
 
     Args:
-        data (list): The dataset read from the CSV file.
+        data (list): The dataset.
 
     Returns:
         list: A list of column names containing numeric data.
@@ -79,18 +75,19 @@ def filter_columns(data):
             continue
         if all(number_regex.fullmatch(row[i]) or row[i] == '' for row in rows) and not all(row[i] == '' for row in rows):
             columns.append(column)
+
     return columns
 
 
 def extract_column_data(data):
     """
-    Extracts numeric data from the dataset, indexed by column name.
+    Extract numeric data from the dataset indexed by column name.
 
     Args:
-        data (list): The dataset read from the CSV file.
+        data (list): The dataset.
 
     Returns:
-        dict: A dictionary with column names as keys and their corresponding data as values.
+        dict: A dictionary with column names as keys and lists of floats or None as values.
     """
     header = data[0]
     numeric_columns = filter_columns(data)
@@ -108,18 +105,18 @@ def extract_column_data(data):
 
 def extract_house_data(data, columns):
     """
-    Extracts data related to each house, indexed by column name.
+    Extract data related to each house for selected columns.
 
     Args:
-        data (list): The dataset read from the CSV file.
-        columns (list): The list of valid columns to extract data for.
+        data (list): The dataset.
+        columns (list): List of columns to extract.
 
     Returns:
-        dict: A dictionary with house names as keys, containing data for the selected columns.
+        dict: Nested dict of house -> column -> list of floats.
     """
     header = data[0]
     col_indices = [i for i, col in enumerate(header) if col in columns]
-    house_data = {house: {col: [] for col in columns} for house in colors.keys()}
+    house_data = {house: {col: [] for col in columns} for house in COLORS}
 
     for row in data[1:]:
         house = row[1]
@@ -133,23 +130,22 @@ def extract_house_data(data, columns):
 
 def display_scatter_plots(data, subject):
     """
-    Displays scatter plots comparing the specified subject to other numerical columns in the dataset.
+    Display scatter plots comparing a subject against other numeric columns.
 
     Args:
-        data (list): The dataset read from the CSV file.
-        subject (str): The column name for the subject to compare others against.
+        data (list): The dataset.
+        subject (str): The main subject column name.
     """
     column_data = extract_column_data(data)
     columns = list(column_data.keys())
 
     if subject not in columns:
-        print(f"Error: '{subject}' is not a valid subject")
+        print(f"Error: '{subject}' is not a valid subject.")
         return
 
     n_cols = 4
     relevant_columns = [col for col in columns if col != subject]
     n_rows = (len(relevant_columns) + n_cols - 1) // n_cols
-
     house_data = extract_house_data(data, columns)
 
     fig, axes = plt.subplots(n_rows, n_cols, figsize=(16, 11))
@@ -167,7 +163,7 @@ def display_scatter_plots(data, subject):
             y_values = [y for y, m in zip(y_values, mask) if m]
 
             if x_values and y_values:
-                ax.scatter(x_values, y_values, alpha=0.8, s=5, label=house, color=colors.get(house, 'gray'))
+                ax.scatter(x_values, y_values, alpha=0.8, s=5, label=house, color=COLORS.get(house, 'gray'))
 
         ax.set_xlabel(subject, fontsize=10)
         ax.set_ylabel(col_y, fontsize=10)
@@ -184,27 +180,26 @@ def display_scatter_plots(data, subject):
 
 def get_valid_subjects(data):
     """
-    Retrieves a list of valid numeric subjects from the dataset.
+    Return valid numeric subjects.
 
     Args:
-        data (list): The dataset read from the CSV file.
+        data (list): The dataset.
 
     Returns:
-        list: A list of valid subject names.
+        list: List of valid subject names.
     """
-    columns = filter_columns(data)
-    return columns
+    return filter_columns(data)
 
 
 def user_input_subject(valid_subjects):
     """
-    Prompts the user to select a subject from the available list of valid subjects.
+    Prompt the user to select a subject.
 
     Args:
-        valid_subjects (list): The list of valid subjects the user can choose from.
+        valid_subjects (list): List of valid subjects.
 
     Returns:
-        str: The subject chosen by the user, or a special command ("Similar Features" or "Exit").
+        str: Selected subject, "Similar Features", or "Exit".
     """
     print("Available subjects:")
     for idx, subject in enumerate(valid_subjects, 1):
@@ -222,21 +217,21 @@ def user_input_subject(valid_subjects):
             elif choice == len(valid_subjects) + 2:
                 return "Exit"
             else:
-                print("Invalid choice, please try again")
+                print("Invalid choice, please try again.")
         except ValueError:
-            print("Invalid input, please enter a number")
+            print("Invalid input, please enter a number.")
 
 
 def pearson_correlation(x, y):
     """
-    Computes the Pearson correlation coefficient between two sets of values.
+    Compute the Pearson correlation coefficient.
 
     Args:
-        x (list): A list of numerical values for the first variable.
-        y (list): A list of numerical values for the second variable.
+        x (list): Values for variable x.
+        y (list): Values for variable y.
 
     Returns:
-        float: The Pearson correlation coefficient between the two variables.
+        float: Pearson correlation coefficient.
     """
     n = len(x)
     if n == 0:
@@ -249,103 +244,97 @@ def pearson_correlation(x, y):
     denom_x = sum((x[i] - mean_x) ** 2 for i in range(n)) ** 0.5
     denom_y = sum((y[i] - mean_y) ** 2 for i in range(n)) ** 0.5
 
-    if denom_x == 0 or denom_y == 0:
-        return 0
-
-    return num / (denom_x * denom_y)
+    return num / (denom_x * denom_y) if denom_x and denom_y else 0
 
 
 def find_strongest_correlations(result):
     """
-    Finds the strongest correlation between any two subjects across all houses.
+    Find the strongest correlation in the dataset.
 
     Args:
-        result (dict): A dictionary containing correlation data between subjects and houses.
+        result (dict): Correlation results.
 
     Returns:
-        tuple: A tuple containing the pair of subjects with the strongest correlation.
+        tuple: Pair of subjects with strongest correlation.
     """
     correlation_scores = []
 
     for subject1 in result:
         for subject2 in result[subject1]:
             correlations = result[subject1][subject2].values()
-            avg_correlation = sum(abs(corr) for corr in correlations) / len(correlations)
-            correlation_scores.append(((subject1, subject2), avg_correlation))
+            avg_corr = sum(abs(corr) for corr in correlations) / len(correlations)
+            correlation_scores.append(((subject1, subject2), avg_corr))
 
     correlation_scores.sort(key=lambda x: x[1], reverse=True)
-
     return correlation_scores[0]
 
 
 def check_similar_features(data):
     """
-    Computes the correlation between each pair of features (columns) for each house, 
-    and identifies the strongest correlation.
+    Compute feature correlations and print the strongest one.
 
     Args:
-        data (list): The dataset read from the CSV file.
+        data (list): The dataset.
     """
     column_data = extract_column_data(data)
     columns = list(column_data.keys())
-
     house_data = extract_house_data(data, columns)
 
-    result = {col_gen: {col: {house: [] for house in colors.keys()} for col in columns if col != col_gen}
-              for col_gen in columns}
+    result = {
+        col1: {
+            col2: {house: [] for house in COLORS}
+            for col2 in columns if col2 != col1
+        }
+        for col1 in columns
+    }
 
-    for col_gen in columns:
-        for col in columns:
-            if col_gen == col:
+    for col1 in columns:
+        for col2 in columns:
+            if col1 == col2:
                 continue
+            for house, values in house_data.items():
+                x = values[col1]
+                y = values[col2]
+                mask = [x_ is not None and y_ is not None for x_, y_ in zip(x, y)]
+                x_filtered = [x_ for x_, m in zip(x, mask) if m]
+                y_filtered = [y_ for y_, m in zip(y, mask) if m]
 
-            for house, house_values in house_data.items():
-                x_values = house_values[col_gen]
-                y_values = house_values[col]
+                correlation = pearson_correlation(x_filtered, y_filtered)
+                result[col1][col2][house] = correlation
 
-                mask = [x is not None and y is not None for x, y in zip(x_values, y_values)]
-                x_values = [x for x, m in zip(x_values, mask) if m]
-                y_values = [y for y, m in zip(y_values, mask) if m]
-
-                correlation = pearson_correlation(x_values, y_values)
-                result[col_gen][col][house] = correlation
-
-    top_correlations = find_strongest_correlations(result)
-
-    print(f"The strongest correlation is between {top_correlations[0][0]} and {top_correlations[0][1]}")
+    best_pair = find_strongest_correlations(result)
+    print(f"The strongest correlation is between {best_pair[0][0]} and {best_pair[0][1]}")
 
 
-if __name__ == "__main__":
+def main():
     """
-    Main function to handle user input and dataset processing.
-    Prompts the user to select a subject and then displays the relevant scatter plots
-    or checks for similar features.
+    Entry point of the program.
+    Handles CSV loading and user interaction.
     """
     if len(sys.argv) != 2:
         print("Usage: python scatter_plot.py <dataset.csv>")
         sys.exit(1)
-    else:
-        data = read_csv(sys.argv[1])
 
+    data = read_csv(sys.argv[1])
     if not data:
-        print("No valid data loaded")
+        print("No valid data loaded.")
         sys.exit(1)
 
     valid_subjects = get_valid_subjects(data)
-
     if not valid_subjects:
-        print("No valid numeric subjects found in the dataset")
+        print("No valid numeric subjects found in the dataset.")
         sys.exit(1)
 
     while True:
         subject = user_input_subject(valid_subjects)
-
         if subject == "Exit":
-            print("Exiting program")
+            print("Exiting program.")
             sys.exit(0)
-
         elif subject == "Similar Features":
             check_similar_features(data)
-
         else:
             display_scatter_plots(data, subject)
+
+
+if __name__ == "__main__":
+    main()
