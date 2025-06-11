@@ -131,7 +131,7 @@ def extract_house_data(data, columns):
     return house_data
 
 
-def display_pair_plot(data):
+def create_pair_plot(data):
     """
     Display a pair plot of numeric data grouped by house.
 
@@ -194,7 +194,12 @@ def display_pair_plot(data):
             ax.grid(True, linestyle="--", alpha=0.3)
 
     plt.tight_layout()
-    plt.show()
+    output_dir = "Outputs/visualization"
+    os.makedirs(output_dir, exist_ok=True)
+    output_path = os.path.join(output_dir, "pair_plot.png")
+    fig.savefig(output_path, dpi=300)
+    print(f"Pair plot saved to {output_path}")
+    plt.close()
 
 
 def main():
@@ -211,7 +216,7 @@ def main():
         print("No numeric columns found in the dataset")
         sys.exit(1)
 
-    display_pair_plot(data)
+    create_pair_plot(data)
 
 
 if __name__ == "__main__":
