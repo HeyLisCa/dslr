@@ -66,11 +66,20 @@ def filter_columns(data):
 
 def extract_house_data(data, columns):
     header = data[0]
+    if "Hogwarts House" not in header:
+        raise InvalidDatasetError("Error: 'Hogwarts House' column is missing from the dataset")
+    house_idx = header.index("Hogwarts House")
+
+    if all((len(row) <= house_idx or not row[house_idx].strip()) for row in data[1:]):
+        raise InvalidDatasetError("Error: All values in 'Hogwarts House' column are empty")
+
     col_indices = [i for i, col in enumerate(header) if col in columns]
     house_data = {house: {col: [] for col in columns} for house in colors.keys()}
 
     for row in data[1:]:
-        house = row[1]
+        if len(row) <= house_idx or not row[house_idx]:
+            continue
+        house = row[house_idx]
         if house in house_data:
             for i, column in enumerate(columns):
                 if row[col_indices[i]] != '':
@@ -143,8 +152,11 @@ if __name__ == "__main__":
     else:
         data = read_csv(sys.argv[1])
         if data:
-            display_histograms(data)
-            result = most_homogeneous_course(data)
-            print(f"The most homogeneous course is: {result}")
+            try:
+                display_histograms(data)
+                result = most_homogeneous_course(data)
+                print(f"The most homogeneous course is: {result}")
+            except InvalidDatasetError as e:
+                print(e)
         else:
             print("No numeric columns found in the dataset")

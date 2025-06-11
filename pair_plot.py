@@ -242,6 +242,15 @@ def main():
         print("No numeric columns found in the dataset")
         sys.exit(1)
 
+    header = data[0]
+    if "Hogwarts House" not in header:
+        print("Error: 'Hogwarts House' column is missing from the dataset")
+        sys.exit(1)
+    house_idx = header.index("Hogwarts House")
+    if all((len(row) <= house_idx or not row[house_idx].strip()) for row in data[1:]):
+        print("Error: All values in 'Hogwarts House' column are empty")
+        sys.exit(1)
+
     create_pair_plot(data)
     discriminative_features(data)
 
