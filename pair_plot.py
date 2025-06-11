@@ -162,7 +162,7 @@ def create_pair_plot(data):
                         ax.hist(
                             values, bins=15,
                             color=COLORS.get(house, 'gray'),
-                            alpha=0.5, label=house,
+                            alpha=0.4, label=house,
                             edgecolor='black'
                         )
             else:
