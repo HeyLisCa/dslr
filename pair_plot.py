@@ -3,6 +3,7 @@ import os
 import csv
 import re
 import matplotlib.pyplot as plt
+import numpy as np
 
 
 COLORS = {
@@ -202,6 +203,31 @@ def create_pair_plot(data):
     plt.close()
 
 
+def discriminative_features(data, top_n=5):
+    columns = filter_columns(data)
+    house_data = extract_house_data(data, columns)
+    scores = {}
+
+    for col in columns:
+        means = []
+        variances = []
+        for house in COLORS.keys():
+            values = house_data[house][col]
+            if values:
+                means.append(np.mean(values))
+                variances.append(np.var(values))
+        if len(means) > 1 and all(v > 0 for v in variances):
+            score = np.var(means) / (np.mean(variances) + 1e-8)
+            scores[col] = score
+        else:
+            scores[col] = 0
+
+    sorted_cols = sorted(scores.items(), key=lambda x: x[1], reverse=True)
+    print("\nBest features (combining histogram and scatter plot separation):")
+    for col, score in sorted_cols[:top_n]:
+        print(f"{col}: separation score = {score:.3f}")
+
+
 def main():
     """
     Entry point of the program.
@@ -217,6 +243,7 @@ def main():
         sys.exit(1)
 
     create_pair_plot(data)
+    discriminative_features(data)
 
 
 if __name__ == "__main__":
