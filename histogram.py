@@ -103,7 +103,12 @@ def display_histograms(data):
         fig.delaxes(axes[i])
     
     plt.tight_layout()
-    plt.show()
+    output_dir = "Outputs/visualization"
+    os.makedirs(output_dir, exist_ok=True)
+    output_path = os.path.join(output_dir, "histogram_plot.png")
+    fig.savefig(output_path, dpi=300)
+    print(f"Histogram plot saved to {output_path}")
+    plt.close()
 
 
 def most_homogeneous_course(data):
