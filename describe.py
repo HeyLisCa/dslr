@@ -225,6 +225,98 @@ def calculate_percent(data, columns, stat):
     return results
 
 
+def calculate_skewness(data, columns, means, stds):
+    """
+    Calculates the skewness for each numeric column.
+
+    Args:
+        data (list): A list of rows from the CSV file.
+        columns (list): A list of numeric column names.
+        means (list): A list of mean values for the corresponding columns.
+        stds (list): A list of standard deviation values for the corresponding columns.
+
+    Returns:
+        list: A list of skewness values for each numeric column.
+    """
+    skewness = []
+    for i, mean in enumerate(means):
+        valid_values = [float(row[i]) for row in data[1:] if row[i] != '']
+        n = len(valid_values)
+        if n < 3 or stds[i] == 0:
+            skewness.append(None)
+            continue
+        m3 = sum((x - mean) ** 3 for x in valid_values) / n
+        skew = m3 / (stds[i] ** 3)
+        skewness.append(skew)
+    return skewness
+
+
+def calculate_kurtosis(data, columns, means, stds):
+    """
+    Calculates the kurtosis for each numeric column.
+
+    Args:
+        data (list): A list of rows from the CSV file.
+        columns (list): A list of numeric column names.
+        means (list): A list of mean values for the corresponding columns.
+        stds (list): A list of standard deviation values for the corresponding columns.
+
+    Returns:
+        list: A list of kurtosis values for each numeric column.
+    """
+    kurtosis = []
+    for i, mean in enumerate(means):
+        valid_values = [float(row[i]) for row in data[1:] if row[i] != '']
+        n = len(valid_values)
+        if n < 4 or stds[i] == 0:
+            kurtosis.append(None)
+            continue
+        m4 = sum((x - mean) ** 4 for x in valid_values) / n
+        kurt = m4 / (stds[i] ** 4) - 3
+        kurtosis.append(kurt)
+    return kurtosis
+
+
+def calculate_missing(data, columns):
+    """
+    Calculates the percentage of missing values for each column.
+
+    Args:
+        data (list): A list of rows from the CSV file.
+        columns (list): A list of column names to calculate the missing percentage for.
+
+    Returns:
+        list: A list of missing value percentages for each column.
+    """
+    missing = []
+    total = len(data) - 1
+    for i in range(len(columns)):
+        count = sum(1 for row in data[1:] if row[i] == '')
+        missing.append((count / total * 100) if total > 0 else None)
+    return missing
+
+
+def calculate_range(data, columns):
+    """
+    Calculates the range (max - min) for each numeric column.
+
+    Args:
+        data (list): A list of rows from the CSV file.
+        columns (list): A list of numeric column names.
+
+    Returns:
+        list: A list of range values for each numeric column.
+    """
+    ranges = []
+    for i, _ in enumerate(columns):
+        valid_values = [float(row[i]) for row in data[1:] if row[i] != '']
+        if not valid_values:
+            ranges.append(None)
+        else:
+            ranges.append(max(valid_values) - min(valid_values))
+    return ranges
+
+
 def display_calc(values, columns):
     """
     Displays calculated statistics for the columns.
@@ -248,7 +340,10 @@ def display_data(data):
         data (list): A list of rows from the CSV file.
     """
     columns = filter_columns(data)
-    stats = ["Count", "Mean", "Std", "Min", "25%", "50%", "75%", "Max"]
+    stats = [
+        "Count", "Mean", "Std", "Min", "25%", "50%", "75%", "Max",
+        "Skewness", "Kurtosis", "Missing (%)", "Range"
+    ]
     header = data[0]
     col_indices = [header.index(col) for col in columns]
     filtered_data = [[row[i] for i in col_indices] for row in data]
@@ -265,6 +360,10 @@ def display_data(data):
     std = calculate_std(filtered_data, columns, mean)
     min = calculate_min(filtered_data, columns)
     max = calculate_max(filtered_data, columns)
+    skewness = calculate_skewness(filtered_data, columns, mean, std)
+    kurtosis = calculate_kurtosis(filtered_data, columns, mean, std)
+    missing = calculate_missing(filtered_data, columns)
+    ranges = calculate_range(filtered_data, columns)
 
     for stat in stats:
         print(f"{stat:<15}", end=" ")
@@ -279,6 +378,14 @@ def display_data(data):
                 values = min
             case "Max":
                 values = max
+            case "Skewness":
+                values = skewness
+            case "Kurtosis":
+                values = kurtosis
+            case "Missing (%)":
+                values = missing
+            case "Range":
+                values = ranges
             case _:
                 values = calculate_percent(filtered_data, columns, stat)
         display_calc(values, columns)
