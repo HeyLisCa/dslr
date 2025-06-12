@@ -3,6 +3,11 @@ import os
 import sys
 import re
 import matplotlib.pyplot as plt
+import signal
+
+
+# Handle the SIGINT signal
+signal.signal(signal.SIGINT, signal.SIG_DFL)
 
 
 COLORS = {

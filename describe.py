@@ -2,6 +2,11 @@ import csv
 import os
 import re
 import sys
+import signal
+
+
+# Handle the SIGINT signal
+signal.signal(signal.SIGINT, signal.SIG_DFL)
 
 
 class InvalidDatasetError(Exception):

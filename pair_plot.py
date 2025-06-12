@@ -4,6 +4,11 @@ import csv
 import re
 import matplotlib.pyplot as plt
 import numpy as np
+import signal
+
+
+# Handle the SIGINT signal
+signal.signal(signal.SIGINT, signal.SIG_DFL)
 
 
 COLORS = {

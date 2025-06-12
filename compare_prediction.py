@@ -2,6 +2,11 @@ import pandas as pd
 from sklearn.metrics import accuracy_score
 import sys
 import os
+import signal
+
+
+# Handle the SIGINT signal
+signal.signal(signal.SIGINT, signal.SIG_DFL)
 
 
 def main():

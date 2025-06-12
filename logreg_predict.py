@@ -2,6 +2,11 @@ import sys
 import pandas as pd
 import numpy as np
 import os
+import signal
+
+
+# Handle the SIGINT signal
+signal.signal(signal.SIGINT, signal.SIG_DFL)
 
 
 def sigmoid(z):
