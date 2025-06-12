@@ -24,15 +24,6 @@ class InvalidDatasetError(Exception):
 
 
 def read_csv(file_path):
-    """
-    Read and validate a CSV file.
-
-    Args:
-        file_path (str): The path to the CSV file to read.
-
-    Returns:
-        list: A list of rows read from the CSV file, or an empty list if an error occurs.
-    """
     try:
         if not os.path.isfile(file_path):
             raise FileNotFoundError(f"Error: The file '{file_path}' was not found.")
@@ -49,11 +40,33 @@ def read_csv(file_path):
             raise InvalidDatasetError(f"Error: The file '{file_path}' has an invalid header.")
 
         column_count = len(header)
+        valid_rows = [header]
+
+        numeric_columns = ['Muggle Studies', 'Care of Magical Creatures', 'Charms', 'Defense Against the Dark Arts',
+                           'Divination', 'Herbology', 'History of Magic', 'Potions', 'Transfiguration', 'Flying']
+
+        numeric_indices = [header.index(col) for col in numeric_columns if col in header]
+
         for i, row in enumerate(rows[1:], start=2):
             if len(row) != column_count:
-                raise InvalidDatasetError(f"Error: Column mismatch at line {i}.")
+                print(f"Warning: Skipping malformed row {i} in file '{file_path}'.")
+                continue
 
-        return rows
+            valid_row = True
+            for idx in numeric_indices:
+                try:
+                    float(row[idx].strip())
+                except ValueError:
+                    valid_row = False
+                    break
+
+            if valid_row:
+                valid_rows.append(row)
+
+        if len(valid_rows) <= 1:
+            raise InvalidDatasetError("Error: No valid data rows found in the dataset.")
+
+        return valid_rows
 
     except (FileNotFoundError, InvalidDatasetError, Exception) as e:
         print(e)
