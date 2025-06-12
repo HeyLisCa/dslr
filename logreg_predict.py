@@ -6,7 +6,8 @@ import os
 
 def sigmoid(z):
     """Compute the sigmoid of z."""
-    return 1 / (1 + np.exp(-z))
+    with np.errstate(over='ignore'):
+        return 1 / (1 + np.exp(-z))
 
 
 def predict(X, weights):
@@ -36,7 +37,11 @@ def logreg_predict(dataset_file, weights_file, stats_file):
     Saves:
         Outputs/prediction/houses.csv with predicted house labels.
     """
-    data = pd.read_csv(dataset_file)
+    try:
+        data = pd.read_csv(dataset_file)
+    except Exception as e:
+        print(f"Error reading dataset file '{dataset_file}': {e}")
+        sys.exit(1)
 
     selected_features = [
         "Charms",
@@ -49,37 +54,65 @@ def logreg_predict(dataset_file, weights_file, stats_file):
 
     missing_features = set(selected_features) - set(data.columns)
     if missing_features:
-        raise ValueError(
-            f"The test data is missing the following columns: "
-            f"{missing_features}"
-        )
+        print(f"Error: The test data is missing columns: {missing_features}")
+        sys.exit(1)
 
-    data[selected_features] = data[selected_features].fillna(
-        data[selected_features].median()
-    )
+    data[selected_features] = data[selected_features].fillna(data[selected_features].median())
 
-    X = np.array(data[selected_features], dtype=float)
+    try:
+        X = data[selected_features].astype(float).values
+    except ValueError as e:
+        print(f"Error: Non-numeric values detected in features after fillna: {e}")
+        sys.exit(1)
 
-    stats = pd.read_csv(stats_file)
+    if np.any(np.isnan(X)) or np.any(np.isinf(X)):
+        print("Error: Features contain NaN or infinite values after preprocessing.")
+        sys.exit(1)
+
+    try:
+        stats = pd.read_csv(stats_file)
+    except Exception as e:
+        print(f"Error reading stats file '{stats_file}': {e}")
+        sys.exit(1)
+
+    if not {'Mean', 'Std'}.issubset(stats.columns):
+        print(f"Error: Stats file '{stats_file}' missing required columns 'Mean' and/or 'Std'.")
+        sys.exit(1)
+
     X_mean = stats["Mean"].to_numpy()
     X_std = stats["Std"].to_numpy()
+
+    if len(X_mean) != len(selected_features) or len(X_std) != len(selected_features):
+        print(f"Error: Stats file columns length mismatch with features count.")
+        sys.exit(1)
+
+    if np.any(X_std == 0):
+        print("Warning: Some features have zero standard deviation. Adjusting to 1 to avoid division by zero.")
+        X_std = np.where(X_std == 0, 1, X_std)
 
     X = (X - X_mean) / X_std
     X = np.clip(X, -5, 5)
 
     X = np.hstack([np.ones((X.shape[0], 1)), X])
 
-    weights = np.loadtxt(weights_file, delimiter=",")
+    try:
+        weights = np.loadtxt(weights_file, delimiter=",")
+    except Exception as e:
+        print(f"Error reading weights file '{weights_file}': {e}")
+        sys.exit(1)
 
     if X.shape[1] != weights.shape[1]:
-        raise ValueError(
-            f"Dimension mismatch: X has {X.shape[1]} columns, but the weights "
-            f"have {weights.shape[1]} columns."
-        )
+        print(f"Error: Dimension mismatch: X has {X.shape[1]} columns, weights have {weights.shape[1]} columns.")
+        sys.exit(1)
 
     predictions = predict(X, weights)
 
     unique_labels = ["Gryffindor", "Hufflepuff", "Ravenclaw", "Slytherin"]
+
+    if np.any(predictions >= len(unique_labels)):
+        print("Error: Predictions contain invalid class indices.")
+        sys.exit(1)
+
     predicted_houses = [unique_labels[p] for p in predictions]
 
     results = pd.DataFrame({
@@ -90,7 +123,11 @@ def logreg_predict(dataset_file, weights_file, stats_file):
     output_dir = "Outputs/prediction"
     os.makedirs(output_dir, exist_ok=True)
     results_path = os.path.join(output_dir, "houses.csv")
-    results.to_csv(results_path, index=False)
+    try:
+        results.to_csv(results_path, index=False)
+    except Exception as e:
+        print(f"Error saving predictions to '{results_path}': {e}")
+        sys.exit(1)
 
     print("Predictions saved in the 'Outputs' folder as 'houses.csv'.")
 
