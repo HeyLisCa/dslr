@@ -5,19 +5,29 @@ import re
 import matplotlib.pyplot as plt
 
 
-colors = {
-    "Gryffindor": "#ff0000",
-    "Slytherin": "#15ac00",
-    "Ravenclaw": "#003cdd",
-    "Hufflepuff": "#e6ea01",
+COLORS = {
+    "Gryffindor": "#f32100",   # red
+    "Slytherin": "#15ac00",    # green
+    "Ravenclaw": "#003cdd",    # blue
+    "Hufflepuff": "#e6ea01",   # yellow
 }
 
 
 class InvalidDatasetError(Exception):
+    """Custom exception raised when the dataset is invalid."""
     pass
 
 
 def read_csv(file_path):
+    """
+    Read and validate a CSV file.
+
+    Args:
+        file_path (str): Path to the CSV file.
+
+    Returns:
+        list: List of rows from the CSV file.
+    """
     try:
         if not os.path.isfile(file_path):
             raise FileNotFoundError(f"Error: The file '{file_path}' was not found")
@@ -51,6 +61,15 @@ def read_csv(file_path):
 
 
 def filter_columns(data):
+    """
+    Filter numeric columns from the dataset.
+
+    Args:
+        data (list): The dataset as a list of rows.
+
+    Returns:
+        list: List of numeric column names.
+    """
     number_regex = re.compile(r"-?\d+(\.\d+)?([eE][-+]?\d+)?")
     header = data[0]
     rows = data[1:]
@@ -61,20 +80,30 @@ def filter_columns(data):
             continue
         if all(number_regex.fullmatch(row[i]) or row[i] == '' for row in rows) and not all(row[i] == '' for row in rows):
             columns.append(column)
+
     return columns
 
 
 def extract_house_data(data, columns):
+    """Extract numeric data for each house.
+
+    Args:
+        data (list): Dataset with header and rows.
+        columns (list): Names of numeric columns to extract.
+
+    Returns:
+        dict: Dictionary with house as key and per-column numeric lists.
+    """
     header = data[0]
     if "Hogwarts House" not in header:
         raise InvalidDatasetError("Error: 'Hogwarts House' column is missing from the dataset")
-    house_idx = header.index("Hogwarts House")
 
+    house_idx = header.index("Hogwarts House")
     if all((len(row) <= house_idx or not row[house_idx].strip()) for row in data[1:]):
         raise InvalidDatasetError("Error: All values in 'Hogwarts House' column are empty")
 
     col_indices = [i for i, col in enumerate(header) if col in columns]
-    house_data = {house: {col: [] for col in columns} for house in colors.keys()}
+    house_data = {house: {col: [] for col in columns} for house in COLORS.keys()}
 
     for row in data[1:]:
         if len(row) <= house_idx or not row[house_idx]:
@@ -84,33 +113,41 @@ def extract_house_data(data, columns):
             for i, column in enumerate(columns):
                 if row[col_indices[i]] != '':
                     house_data[house][column].append(float(row[col_indices[i]]))
-    
+
     return house_data
 
 
 def display_histograms(data):
+    """Generate histograms for each numeric column per house.
+
+    Args:
+        data (list): Dataset including header and rows.
+    """
     columns = filter_columns(data)
     house_data = extract_house_data(data, columns)
     n_cols = len(columns)
     n_rows = (n_cols // 4) + (1 if n_cols % 4 else 0)
+
     fig, axes = plt.subplots(n_rows, 4, figsize=(13, 11))
     axes = axes.flatten()
-    
+
     for i, column in enumerate(columns):
         for house, house_values in house_data.items():
             values = house_values[column]
             if values:
-                axes[i].hist(values, bins=20, color=colors.get(house, 'gray'), alpha=0.4, edgecolor='black', label=house)
-        
+                axes[i].hist(
+                    values, bins=20, color=COLORS.get(house, 'gray'),
+                    alpha=0.4, edgecolor='black', label=house
+                )
         axes[i].set_xlabel("Notes")
         axes[i].set_ylabel("Frequency")
         axes[i].set_title(f"{column}")
         axes[i].grid(True, linestyle='--', alpha=0.6)
         axes[i].legend()
-    
+
     for i in range(n_cols, len(axes)):
         fig.delaxes(axes[i])
-    
+
     plt.tight_layout()
     output_dir = "Outputs/visualization"
     os.makedirs(output_dir, exist_ok=True)
@@ -121,32 +158,46 @@ def display_histograms(data):
 
 
 def most_homogeneous_course(data):
+    """Identify the course with the smallest variance in house means.
+
+    Args:
+        data (list): Dataset including header and rows.
+
+    Returns:
+        str: Name of the most homogeneous course.
+    """
     columns = filter_columns(data)
     house_data = extract_house_data(data, columns)
-    
+
     course_variances = {}
     for column in columns:
         house_means = []
-        for house in colors.keys():
+        for house in COLORS.keys():
             if house_data[house][column]:
-                house_means.append(sum(house_data[house][column]) / len(house_data[house][column]))
+                house_means.append(
+                    sum(house_data[house][column]) / len(house_data[house][column])
+                )
 
         if len(house_means) == 4:
             mean = sum(house_means) / len(house_means)
             variance = sum((x - mean) ** 2 for x in house_means) / len(house_means)
             course_variances[column] = variance ** 0.5
-    
+
     most_homogeneous_column = None
     smallest_variance = float('inf')
     for column, variance in course_variances.items():
         if variance < smallest_variance:
             smallest_variance = variance
             most_homogeneous_column = column
-    
+
     return most_homogeneous_column
 
 
-if __name__ == "__main__":
+def main():
+    """
+    Entry point of the program.
+    Handles argument validation, file loading and plotting.
+    """
     if len(sys.argv) != 2:
         print("Usage: python describe.py <dataset.csv>")
     else:
@@ -160,3 +211,7 @@ if __name__ == "__main__":
                 print(e)
         else:
             print("No numeric columns found in the dataset")
+
+
+if __name__ == "__main__":
+    main()
